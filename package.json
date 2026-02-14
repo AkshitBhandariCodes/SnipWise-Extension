@@ -1,0 +1,41 @@
+{
+  "name": "snipwise-extension",
+  "version": "1.0.0",
+  "description": "Smart clipboard manager with instant format conversion",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "change-case": "^5.4.2",
+    "dexie": "^3.2.4",
+    "fuse.js": "^7.0.0",
+    "js-yaml": "^4.1.0",
+    "lucide-react": "^0.303.0",
+    "marked": "^11.1.1",
+    "qrcode": "^1.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tinycolor2": "^1.6.0",
+    "turndown": "^7.1.2",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/js-yaml": "^4.0.9",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/tinycolor2": "^1.4.6",
+    "@types/turndown": "^5.0.4",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}
