@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Snipwise",
   "version": "1.0.0",
-  "description": "Smart clipboard manager with instant format conversion",
+  "description": "Smart clipboard manager with instant format conversion. Auto-captures everything you copy. 100% private, zero backend.",
   "permissions": [
     "clipboardRead",
     "clipboardWrite",
