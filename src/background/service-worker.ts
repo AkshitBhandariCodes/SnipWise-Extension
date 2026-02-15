@@ -342,7 +342,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                             useCount: item.useCount + 1,
                             lastUsed: Date.now(),
                         });
-                        sendResponse({ success: true, content: item.content });
+                        sendResponse({
+                            success: true,
+                            content: item.content,
+                            type: item.type,
+                            imageData: item.metadata?.imageData,
+                            mimeType: item.metadata?.mimeType,
+                        });
                     } else {
                         sendResponse({ success: false, error: 'Item not found' });
                     }
@@ -504,6 +510,124 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
 
     return true; // Indicates async response
+});
+
+// ─── Context Menus (for right-click → Copy link/image) ───
+
+chrome.runtime.onInstalled.addListener(() => {
+    // Remove any old menus first
+    chrome.contextMenus.removeAll(() => {
+        chrome.contextMenus.create({
+            id: 'snipwise-save-link',
+            title: 'Save link to Snipwise',
+            contexts: ['link'],
+        });
+
+        chrome.contextMenus.create({
+            id: 'snipwise-save-image',
+            title: 'Save image to Snipwise',
+            contexts: ['image'],
+        });
+
+        chrome.contextMenus.create({
+            id: 'snipwise-save-selection',
+            title: 'Save text to Snipwise',
+            contexts: ['selection'],
+        });
+    });
+
+    console.log('[Snipwise] Context menus created');
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    try {
+        let item: ClipboardItem | null = null;
+
+        if (info.menuItemId === 'snipwise-save-link' && info.linkUrl) {
+            const content = info.linkUrl;
+            // Duplicate check
+            if (content.trim() === lastClipboardContent.trim()) return;
+            lastClipboardContent = content;
+
+            item = createClipboardItem(content);
+            item.source = { url: tab?.url, title: tab?.title };
+            await saveClipboardItem(item);
+
+            // Send toast to active tab
+            if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, {
+                    type: 'SHOW_TOAST',
+                    payload: {
+                        message: 'Successfully added to Snipwise ✨',
+                        contentType: 'url',
+                        preview: content.slice(0, 40) + (content.length > 40 ? '...' : ''),
+                    },
+                }).catch(() => { });
+            }
+        }
+
+        if (info.menuItemId === 'snipwise-save-image' && info.srcUrl) {
+            const imageUrl = info.srcUrl;
+
+            // For image URLs, save the source URL as an image item
+            const imageHash = imageUrl.slice(0, 100);
+            if (imageHash === lastClipboardContent) return;
+            lastClipboardContent = imageHash;
+
+            item = {
+                id: crypto.randomUUID(),
+                content: imageUrl,
+                type: 'image',
+                format: 'plain',
+                metadata: {
+                    imageData: imageUrl,
+                    mimeType: 'image/url',
+                    imageHash: imageHash,
+                },
+                timestamp: Date.now(),
+                source: { url: tab?.url, title: tab?.title },
+                tags: [],
+                pinned: false,
+                useCount: 0,
+                lastUsed: Date.now(),
+            };
+            await saveClipboardItem(item);
+
+            if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, {
+                    type: 'SHOW_TOAST',
+                    payload: {
+                        message: 'Successfully added to Snipwise ✨',
+                        contentType: 'image',
+                        preview: 'Image saved',
+                    },
+                }).catch(() => { });
+            }
+        }
+
+        if (info.menuItemId === 'snipwise-save-selection' && info.selectionText) {
+            const content = info.selectionText;
+            if (content.trim() === lastClipboardContent.trim()) return;
+            lastClipboardContent = content;
+
+            item = createClipboardItem(content);
+            item.source = { url: tab?.url, title: tab?.title };
+            await saveClipboardItem(item);
+
+            if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, {
+                    type: 'SHOW_TOAST',
+                    payload: {
+                        message: 'Successfully added to Snipwise ✨',
+                        contentType: item.type,
+                        preview: content.slice(0, 40) + (content.length > 40 ? '...' : ''),
+                    },
+                }).catch(() => { });
+            }
+        }
+    } catch (error) {
+        console.error('[Snipwise] Context menu handler error:', error);
+    }
 });
 
 // Initialize
