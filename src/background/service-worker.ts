@@ -216,8 +216,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                             chrome.tabs.sendMessage(tab.id, {
                                 type: 'SHOW_TOAST',
                                 payload: {
-                                    message: 'Copied to Snipwise',
+                                    message: 'Successfully added to Snipwise ✨',
                                     type: 'success',
+                                    contentType: item.type,
                                     preview: content.slice(0, 40) + (content.length > 40 ? '...' : '')
                                 }
                             }).catch(() => { });
@@ -268,9 +269,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                             chrome.tabs.sendMessage(tab.id, {
                                 type: 'SHOW_TOAST',
                                 payload: {
-                                    message: 'Image Saved',
+                                    message: 'Successfully added to Snipwise ✨',
                                     type: 'success',
-                                    image: imageData
+                                    contentType: 'image',
+                                    image: imageData,
+                                    preview: 'Image captured'
                                 }
                             }).catch(() => { });
                         }
