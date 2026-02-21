@@ -191,7 +191,62 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
             });
 
             if (response.success) {
-                await navigator.clipboard.writeText(response.content);
+                // For image items, copy the actual image to clipboard
+                if (response.type === 'image' && response.imageData) {
+                    try {
+                        let blob: Blob;
+                        if (response.imageData.startsWith('data:')) {
+                            // Data URL — convert to blob
+                            const res = await fetch(response.imageData);
+                            const originalBlob = await res.blob();
+                            // Convert to PNG for clipboard (required by Clipboard API)
+                            const canvas = document.createElement('canvas');
+                            const img = new Image();
+                            await new Promise<void>((resolve, reject) => {
+                                img.onload = () => resolve();
+                                img.onerror = reject;
+                                img.src = response.imageData;
+                            });
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx?.drawImage(img, 0, 0);
+                            blob = await new Promise<Blob>((resolve, reject) => {
+                                canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+                            });
+                        } else {
+                            // HTTP URL — fetch and convert
+                            const res = await fetch(response.imageData);
+                            const originalBlob = await res.blob();
+                            // Convert to PNG
+                            const canvas = document.createElement('canvas');
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            await new Promise<void>((resolve, reject) => {
+                                img.onload = () => resolve();
+                                img.onerror = reject;
+                                img.src = URL.createObjectURL(originalBlob);
+                            });
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx?.drawImage(img, 0, 0);
+                            blob = await new Promise<Blob>((resolve, reject) => {
+                                canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+                            });
+                            URL.revokeObjectURL(img.src);
+                        }
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                    } catch (imgErr) {
+                        console.warn('Image clipboard copy failed, falling back to text:', imgErr);
+                        // Fallback: copy URL/content as text
+                        await navigator.clipboard.writeText(response.imageData || response.content);
+                    }
+                } else {
+                    await navigator.clipboard.writeText(response.content);
+                }
                 get().updateItem(id, {
                     useCount: (get().items.find(i => i.id === id)?.useCount || 0) + 1,
                     lastUsed: Date.now(),
